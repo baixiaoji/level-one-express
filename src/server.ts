@@ -3,6 +3,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import taskRouter from './routes/tasks'
 import userRouter from './routes/user'
+import {protect} from "./modules/middleeware";
 
 const app = express();
 
@@ -12,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/user', userRouter)
-app.use('/task', taskRouter)
+app.use('/task', protect, taskRouter)
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Express + TypeScript Server');
