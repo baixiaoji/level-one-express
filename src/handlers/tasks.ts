@@ -1,7 +1,6 @@
 import { RequestHandler } from "express";
 import z from 'zod'
-import { Task } from "../models/tasks";
-import {TASKS_DB} from "../local_db/tasks";
+import prisma from "../db";
 
 
 
@@ -13,17 +12,18 @@ export const CreateTaskInput = z.object({
 type CreateTaskBody = z.infer<typeof CreateTaskInput>
 
 
-export const createTask: RequestHandler<CreateTaskBody> = (req, res) => {
-    const task: Task = {
-      id: TASKS_DB.length + 1,
-      title: req.body.title,
-      description: req.body.description,
-      completed: false,
-    };
+export const createTask: RequestHandler<CreateTaskBody> = async (req, res) => {
+    const task = await prisma.toDo.create({
+        data: {
+            title: req.body.title,
+            description: req.body.description,
+            userId: req.user.id,
+        },
+    })
 
-    TASKS_DB.push(task);
-
-    res.status(201).json(task);
+    res.status(201).json({
+        todo: task,
+    });
 }
 
 export const GetTaskInput = z.object({
@@ -31,9 +31,17 @@ export const GetTaskInput = z.object({
 })
 
 type GetTaskParam = z.infer<typeof GetTaskInput>
-export const getTask: RequestHandler<GetTaskParam> = (req, res) => {
-    const id = Number(req.params.id)
-    const item = TASKS_DB[id - 1]
+export const getTask: RequestHandler<GetTaskParam> = async (req, res) => {
+    const task = await prisma.toDo.findUnique({
+        where: {id: req.params.id, userId: req.user.id },
+    })
+    if (!task) {
+        res.status(404);
+        res.send("没有Todo")
+        return
+    }
 
-    res.status(200).json(item)
+    res.status(200).json({
+        todo: task,
+    })
 }
